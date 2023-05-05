@@ -288,4 +288,35 @@ describe('Veslo', () => {
         return done();
       });
   });
+
+  it('should extract the path onto request.params', (done) => {
+    app.route({
+      path: '/test/:which/:id',
+      method: 'GET',
+      stack: [
+        ({ req, res }) => {
+          res
+            .writeHead(200, {
+              'Content-Type': 'application/json',
+            })
+            .end(JSON.stringify(req.params));
+        },
+      ],
+    });
+
+    const server = app.run.bind(app);
+    void request(server)
+      .get('/test/a/10')
+      .expect(200)
+      .expect('Content-Type', 'application/json')
+      .end((err, res) => {
+        if (err) {
+          return done(err);
+        }
+
+        expect(res.text).to.eq(JSON.stringify({ which: 'a', id: '10' }));
+
+        return done();
+      });
+  });
 });

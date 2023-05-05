@@ -54,8 +54,10 @@ export default class Veslo extends EventEmitter {
     const matcher = match(path, { decode: unescape });
     const routeTask: Middleware = async (context, next) => {
       const { req, res, app } = context;
+      const matched = matcher(req.url as string);
 
-      if (matcher(req.url as string) && req.method === method) {
+      if (matched && req.method === method) {
+        req.params = matched.params;
         await runMiddlewaresTask(req, res, app, stack);
       }
 

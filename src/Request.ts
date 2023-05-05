@@ -4,7 +4,7 @@ import { URL } from 'node:url';
 class Request extends IncomingMessage {
   public resolved = false;
 
-  public params!: Record<string, unknown>;
+  public params!: Record<string, unknown> | object;
 
   public header(key: string) {
     return this.headers[key];
