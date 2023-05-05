@@ -3,7 +3,6 @@ import { expect } from 'chai';
 import Veslo from '../src/Veslo';
 
 describe('Veslo', () => {
-  const methods = ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'CONNECT', 'OPTIONS', 'TRACE', 'PATCH'];
   const app = new Veslo();
   let i = 0;
 
