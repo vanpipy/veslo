@@ -25,17 +25,7 @@ type Route = {
 
 const WELCOME = 'Hi, I am veslo';
 
-const immediateTask = (callback: () => Unknown): Unknown =>
-  new Promise((resolve, reject) => {
-    setImmediate(() => {
-      try {
-        const result = callback();
-        resolve(result);
-      } catch (err) {
-        reject(err);
-      }
-    });
-  });
+const Exception: Error[] = [];
 
 export default class Veslo extends EventEmitter {
   private settings: Record<string, unknown> = {};
@@ -53,18 +43,16 @@ export default class Veslo extends EventEmitter {
   route(route: Route) {
     const { path, method, stack } = route;
     const matcher = match(path, { decode: unescape });
-    const routeTask: Middleware = async (context, next) => {
-      const { req, res, app } = context;
+    const routeTask: Middleware = ({ req, res, app }, next) => {
       const matched = matcher(req.url as string);
 
       if (matched && req.method === method && req.resolved !== true) {
-        console.log('matched', req.url, req.method);
         req.resolved = true;
         req.params = matched.params;
-        await runMiddlewaresTask(req, res, app, stack);
+        runMiddlewaresTask(req, res, app, stack);
       }
 
-      next();
+      return next();
     };
     this.routes.push(routeTask);
   }
@@ -73,7 +61,7 @@ export default class Veslo extends EventEmitter {
     this.stack.push(middleware);
   }
 
-  async run(req: Request, res: Response) {
+  run(req: Request, res: Response) {
     if (req.url === '/') {
       res
         .writeHead(200, {
@@ -84,32 +72,30 @@ export default class Veslo extends EventEmitter {
       return;
     }
 
-    try {
-      const { routes, stack } = this;
-      const middlewares = [...stack];
-      await runMiddlewaresTask(req, res, this, middlewares);
-      await runMiddlewaresTask(req, res, this, routes);
-    } catch (err) {
-      let errorMessage;
+    const { routes, stack } = this;
+    runMiddlewaresTask(req, res, this, [...stack, ...routes]);
 
-      if (err instanceof Error) {
-        errorMessage = err.message;
+    setTimeout(() => {
+      if (Exception.length) {
+        const { message: errorMessage } = Exception[0];
+        Exception.length = 0;
+        res
+          .writeHead(500, {
+            'Content-Type': 'text/html',
+          })
+          .end(`500\nServer Error\n${errorMessage}`);
       }
+    }, 0);
 
-      res
-        .writeHead(500, {
-          'Content-Type': 'text/html',
-        })
-        .end(`500\nServer Error\n${errorMessage as string}`);
-    }
-
-    if (req.resolved !== true) {
-      res
-        .writeHead(404, {
-          'Content-Type': 'text/html',
-        })
-        .end(`404\n${req.url as string} ${req.method as string} Cannot Found`);
-    }
+    setTimeout(() => {
+      if (req.resolved !== true) {
+        res
+          .writeHead(404, {
+            'Content-Type': 'text/html',
+          })
+          .end(`404\n${req.url as string} ${req.method as string} Cannot Found`);
+      }
+    }, 0);
   }
 
   listen(...args: unknown[]) {
@@ -132,24 +118,32 @@ function runMiddlewaresTask(req: Request, res: Response, app: Veslo, middlewares
     return;
   }
 
-  const task = async (req: Request, res: Response, middlewares: Middleware[], current: number): Promise<unknown> => {
-    const middle = middlewares[current];
+  const task = (req: Request, res: Response, middlewares: Middleware[], current: number) => {
     const next = () => {
       current += 1;
 
-      if (current >= middlewares.length) {
+      if (current >= middlewares.length || Exception.length) {
         return;
       }
 
       if (current < middlewares.length) {
-        return task(req, res, middlewares, current);
+        task(req, res, middlewares, current);
       }
     };
 
-    return await immediateTask(() => {
-      return middle({ req, res, app }, next);
+    setImmediate(() => {
+      try {
+        const middle = middlewares[current];
+        middle({ req, res, app }, next);
+      } catch (err) {
+        if (err instanceof Error) {
+          Exception.push(err);
+        }
+
+        console.error(err);
+      }
     });
   };
 
-  return task(req, res, middlewares, 0);
+  task(req, res, middlewares, 0);
 }
