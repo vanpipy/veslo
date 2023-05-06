@@ -3,8 +3,11 @@ import { expect } from 'chai';
 import Veslo from '../src/Veslo';
 
 describe('Veslo', () => {
-  const app = new Veslo();
-  let i = 0;
+  let app: Veslo;
+
+  beforeEach(() => {
+    app = new Veslo();
+  });
 
   it('should set the custom attribute for current application', () => {
     app.set('test', 'a test attribute');
@@ -16,7 +19,7 @@ describe('Veslo', () => {
     expect(app.get('test')).to.eq('overwrited');
   });
 
-  it(`should reply \`Hi, I am veslo\` when the route is empty and request with get method`, (done) => {
+  it(`should reply \`Hi, I am veslo\` when request root path with get method`, (done) => {
     const server = app.run.bind(app);
     void request(server)
       .get('/')
@@ -250,6 +253,18 @@ describe('Veslo', () => {
   });
 
   it('should invoke the middlewares when request successfully', (done) => {
+    let i = 0;
+
+    app.route({
+      path: '/testmiddleware',
+      method: 'GET',
+      stack: [
+        ({ res }) => {
+          res.end('test the route');
+        },
+      ],
+    });
+
     app.use((_, next) => {
       i += 1;
       next();
@@ -262,28 +277,13 @@ describe('Veslo', () => {
 
     const server = app.run.bind(app);
     void request(server)
-      .get('/testget')
+      .get('/testmiddleware')
       .end((err) => {
         if (err) {
           return done(err);
         }
 
         expect(i).to.eq(3);
-
-        return done();
-      });
-  });
-
-  it('should invoke the middlewares when request successfully again', (done) => {
-    const server = app.run.bind(app);
-    void request(server)
-      .get('/testget')
-      .end((err) => {
-        if (err) {
-          return done(err);
-        }
-
-        expect(i).to.eq(6);
 
         return done();
       });
@@ -315,6 +315,50 @@ describe('Veslo', () => {
         }
 
         expect(res.text).to.eq(JSON.stringify({ which: 'a', id: '10' }));
+
+        return done();
+      });
+  });
+
+  it('should reply 404 code when request a not found path', (done) => {
+    const server = app.run.bind(app);
+    void request(server)
+      .get('/notfound')
+      .expect(404)
+      .expect('Content-Type', 'text/html')
+      .end((err, res) => {
+        if (err) {
+          return done(err);
+        }
+
+        expect(res.text).to.eq('404\n/notfound GET Cannot Found');
+
+        return done();
+      });
+  });
+
+  it('should reach 500 code when requesting with an exception', (done) => {
+    app.route({
+      path: '/500',
+      method: 'GET',
+      stack: [
+        () => {
+          throw new Error('500 error');
+        },
+      ],
+    });
+
+    const server = app.run.bind(app);
+    void request(server)
+      .get('/500')
+      .expect(500)
+      .expect('Content-Type', 'text/html')
+      .end((err, res) => {
+        if (err) {
+          return done(err);
+        }
+
+        expect(res.text).to.eq('500\nServer Error\n500 error');
 
         return done();
       });

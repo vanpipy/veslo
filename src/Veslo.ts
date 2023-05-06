@@ -13,7 +13,9 @@ export type Context = {
   app: Veslo;
 };
 
-export type Middleware = (context: Context, next: () => unknown | Promise<unknown>) => unknown;
+type Unknown = unknown | Promise<unknown>;
+
+export type Middleware = (context: Context, next: () => Unknown) => Unknown;
 
 type Route = {
   path: string;
@@ -23,17 +25,16 @@ type Route = {
 
 const WELCOME = 'Hi, I am veslo';
 
-const immediateTask = (callback: () => unknown): unknown =>
+const immediateTask = (callback: () => Unknown): Unknown =>
   new Promise((resolve, reject) => {
-    try {
-      setImmediate(() => {
+    setImmediate(() => {
+      try {
         const result = callback();
         resolve(result);
-      });
-    } catch (err) {
-      console.error(err);
-      reject(err);
-    }
+      } catch (err) {
+        reject(err);
+      }
+    });
   });
 
 export default class Veslo extends EventEmitter {
@@ -56,7 +57,9 @@ export default class Veslo extends EventEmitter {
       const { req, res, app } = context;
       const matched = matcher(req.url as string);
 
-      if (matched && req.method === method) {
+      if (matched && req.method === method && req.resolved !== true) {
+        console.log('matched', req.url, req.method);
+        req.resolved = true;
         req.params = matched.params;
         await runMiddlewaresTask(req, res, app, stack);
       }
@@ -71,7 +74,7 @@ export default class Veslo extends EventEmitter {
   }
 
   async run(req: Request, res: Response) {
-    if (this.routes.length === 0) {
+    if (req.url === '/') {
       res
         .writeHead(200, {
           'Content-Type': 'text/plain',
@@ -87,7 +90,25 @@ export default class Veslo extends EventEmitter {
       await runMiddlewaresTask(req, res, this, middlewares);
       await runMiddlewaresTask(req, res, this, routes);
     } catch (err) {
-      console.log(err);
+      let errorMessage;
+
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+
+      res
+        .writeHead(500, {
+          'Content-Type': 'text/html',
+        })
+        .end(`500\nServer Error\n${errorMessage as string}`);
+    }
+
+    if (req.resolved !== true) {
+      res
+        .writeHead(404, {
+          'Content-Type': 'text/html',
+        })
+        .end(`404\n${req.url as string} ${req.method as string} Cannot Found`);
     }
   }
 
@@ -106,7 +127,7 @@ export default class Veslo extends EventEmitter {
   }
 }
 
-async function runMiddlewaresTask(req: Request, res: Response, app: Veslo, middlewares: Middleware[]) {
+function runMiddlewaresTask(req: Request, res: Response, app: Veslo, middlewares: Middleware[]) {
   if (middlewares.length === 0) {
     return;
   }
@@ -130,5 +151,5 @@ async function runMiddlewaresTask(req: Request, res: Response, app: Veslo, middl
     });
   };
 
-  return await task(req, res, middlewares, 0);
+  return task(req, res, middlewares, 0);
 }
