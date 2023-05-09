@@ -120,26 +120,6 @@ describe('Veslo', () => {
     expect(response.text).to.eq('test the route');
   });
 
-  it(`should reply the expected content when hit a connect method route`, (done) => {
-    app.route({
-      path: '/testconnect',
-      method: 'CONNECT',
-      stack: [
-        ({ res }) => {
-          res.end();
-        },
-      ],
-    });
-
-    const server = app.run.bind(app);
-    void request(server)
-      .connect('/testconnect')
-      .expect(200)
-      .end(() => {
-        return done();
-      });
-  });
-
   it(`should reply the expected content when hit a options method route`, async () => {
     app.route({
       path: '/testoptions',

@@ -5,7 +5,7 @@ import { match } from 'path-to-regexp';
 import Request from './Request';
 import Response from './Response';
 
-export type Method = 'GET' | 'HEAD' | 'POST' | 'PUT' | 'DELETE' | 'CONNECT' | 'OPTIONS' | 'TRACE' | 'PATCH';
+export type Method = 'GET' | 'HEAD' | 'POST' | 'PUT' | 'DELETE' | 'OPTIONS' | 'TRACE' | 'PATCH';
 
 export type Context = {
   req: Request;
