@@ -15,7 +15,7 @@ describe('Veslo', () => {
   let app: Veslo;
 
   beforeEach(() => {
-    app = new Veslo();
+    app = new Veslo({ logger: { level: 'debug' } });
   });
 
   it('should set the custom attribute for current application', () => {

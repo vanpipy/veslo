@@ -57,6 +57,7 @@
     ]
   },
   "dependencies": {
-    "path-to-regexp": "^6.2.1"
+    "path-to-regexp": "^6.2.1",
+    "pino": "^8.14.1"
   }
 }

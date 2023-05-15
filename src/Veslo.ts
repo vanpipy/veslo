@@ -2,6 +2,7 @@ import { EventEmitter } from 'node:events';
 import { createServer } from 'node:http';
 import { unescape } from 'node:querystring';
 import { match } from 'path-to-regexp';
+import pino from 'pino';
 import Request from './Request';
 import Response from './Response';
 
@@ -29,6 +30,23 @@ export default class Veslo extends EventEmitter {
   private settings: Record<string, unknown> = {};
   private routes: Middleware[] = [];
   private stack: Middleware[] = [];
+
+  public logger: pino.Logger;
+
+  constructor(config?: { logger?: pino.LoggerOptions & { logPath?: string } }) {
+    super();
+
+    const { logger = {} } = config || {};
+    const { logPath = './veslo.log', ...rest } = logger;
+
+    this.logger = pino(
+      {
+        name: 'veslo',
+        ...rest,
+      },
+      pino.destination(logPath)
+    );
+  }
 
   set(key: string, value: unknown) {
     this.settings[key] = value;
@@ -127,40 +145,65 @@ function runMiddlewaresTask(
     done?: () => void;
   }
 ) {
+  const middlewaresLength = middlewares.length;
   const { req, res, app, done } = options;
+  const { logger } = app;
+
+  logger.debug('Run middlewares task');
 
   if (middlewares.length === 0) {
+    logger.debug('Stop cause middlewares task are empty');
+
     if (typeof done === 'function') {
+      logger.debug('Done with the empty middlewares task');
       done();
     }
+
+    logger.debug('End middlewares task');
 
     return;
   }
 
   const task = (req: Request, res: Response, middlewares: Middleware[], current: number) => {
+    logger.debug(`Start middleware task {${current}}`);
+
     const next = () => {
+      logger.debug('Try to trigger the next middleware task');
+
       current += 1;
 
-      if (current >= middlewares.length) {
+      logger.debug(`Next middleware task {${current}} and the length of the middlewares task is ${middlewaresLength}`);
+
+      if (current >= middlewaresLength) {
+        logger.debug('Stop cause out of the middlewares');
+
         if (typeof done === 'function') {
+          logger.debug('Done cause out of the middlewares');
           done();
         }
         return;
       }
 
-      if (current < middlewares.length) {
+      if (current < middlewaresLength) {
+        logger.debug(`Trigger the middleware task {${current}}`);
         task(req, res, middlewares, current);
       }
     };
 
+    logger.debug(`Create an immediate task{${current}}`);
+
     setImmediate(() => {
+      logger.debug(`Run the immediate task {${current}}`);
+
       try {
         const middle = middlewares[current];
         middle({ req, res, app }, next);
       } catch (err) {
         handleExecuteError(res, err as Error);
-        console.error(err);
+        logger.error(err);
       }
+
+      logger.debug(`Done the immediate task {${current}}`);
     });
   };
 
