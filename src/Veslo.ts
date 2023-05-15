@@ -149,62 +149,65 @@ function runMiddlewaresTask(
   const { req, res, app, done } = options;
   const { logger } = app;
 
-  logger.debug('Run middlewares task');
+  logger.debug(`> [Start] to run middlewares task(${middlewaresLength})`);
 
   if (middlewares.length === 0) {
-    logger.debug('Stop cause middlewares task are empty');
+    logger.debug(`> [Stop] cause middlewares task(${middlewaresLength}) are empty`);
 
     if (typeof done === 'function') {
-      logger.debug('Done with the empty middlewares task');
+      logger.debug('> [Done] cause middlewares task was empty');
       done();
     }
 
-    logger.debug('End middlewares task');
+    logger.debug('> [End] middlewares task');
 
     return;
   }
 
   const task = (req: Request, res: Response, middlewares: Middleware[], current: number) => {
-    logger.debug(`Start middleware task {${current}}`);
+    logger.debug(`|-> [Start] middleware task {${current + 1}/${middlewaresLength}}`);
 
     const next = () => {
-      logger.debug('Try to trigger the next middleware task');
-
-      current += 1;
-
-      logger.debug(`Next middleware task {${current}} and the length of the middlewares task is ${middlewaresLength}`);
-
-      if (current >= middlewaresLength) {
-        logger.debug('Stop cause out of the middlewares');
+      if (current + 1 >= middlewaresLength) {
+        logger.debug(`|-> [End] at ${current + 1}/${middlewaresLength} with the task[${current}]`);
+        logger.debug('> [End] the running middlewares task');
 
         if (typeof done === 'function') {
-          logger.debug('Done cause out of the middlewares');
+          logger.debug('> [Done] cause the middlewares task was ended');
           done();
         }
+
         return;
       }
 
-      if (current < middlewaresLength) {
-        logger.debug(`Trigger the middleware task {${current}}`);
-        task(req, res, middlewares, current);
+      if (current + 1 < middlewaresLength) {
+        logger.debug(`|-> [Start] to trigger the next middleware task {${current + 2}/${middlewaresLength}}`);
+        task(req, res, middlewares, current + 1);
       }
     };
 
-    logger.debug(`Create an immediate task{${current}}`);
+    logger.debug(`|-> [Create] an immediate task {${current + 1}/${middlewaresLength}}`);
 
-    setImmediate(() => {
-      logger.debug(`Run the immediate task {${current}}`);
+    const immediateTask = () => {
+      logger.debug(`|-> [Run] the immediate task {${current + 1}/${middlewaresLength}}`);
 
       try {
+        logger.debug(`|-> [Running] the immediate task {${current + 1}/${middlewaresLength}}`);
+
         const middle = middlewares[current];
         middle({ req, res, app }, next);
-      } catch (err) {
-        handleExecuteError(res, err as Error);
-        logger.error(err);
-      }
 
-      logger.debug(`Done the immediate task {${current}}`);
-    });
+        logger.debug(`|-> [Done] the immediate task {${current + 1}/${middlewaresLength}}`);
+      } catch (err) {
+        logger.debug(`|-> [Error] with immediate task ${current + 1}/${middlewaresLength}`);
+        logger.error(err);
+        handleExecuteError(res, err as Error);
+      }
+    };
+
+    setImmediate(immediateTask);
+
+    logger.debug(`|-> [Created] the immediate task {${current + 1}/${middlewaresLength}}`);
   };
 
   task(req, res, middlewares, 0);

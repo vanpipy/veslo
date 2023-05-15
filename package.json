@@ -41,6 +41,7 @@
     "lint-staged": "^13.0.3",
     "mocha": "^10.0.0",
     "nodemon": "^2.0.21",
+    "pino-pretty": "^10.0.0",
     "prettier": "^2.8.4",
     "sinon": "^14.0.0",
     "standard-version": "^9.5.0",
@@ -52,9 +53,7 @@
     "node": ">= 16"
   },
   "lint-staged": {
-    "*.{ts,js}": [
-      "prettier --write"
-    ]
+    "*.{ts,js}": ["prettier --write"]
   },
   "dependencies": {
     "path-to-regexp": "^6.2.1",
