@@ -25,8 +25,6 @@ type Route = {
 
 const WELCOME = 'Hi, I am veslo';
 
-const Exception: Error[] = [];
-
 export default class Veslo extends EventEmitter {
   private settings: Record<string, unknown> = {};
   private routes: Middleware[] = [];
@@ -110,7 +108,7 @@ function handleExecuteError(res: Response, Exception: Error) {
 
 function handleNotFoundError(req: Request, res: Response) {
   setImmediate(() => {
-    if (req.resolved !== true && Exception.length === 0) {
+    if (req.resolved !== true) {
       res
         .writeHead(404, {
           'Content-Type': 'text/html',
@@ -143,7 +141,7 @@ function runMiddlewaresTask(
     const next = () => {
       current += 1;
 
-      if (current >= middlewares.length || Exception.length) {
+      if (current >= middlewares.length) {
         if (typeof done === 'function') {
           done();
         }
