@@ -49,7 +49,7 @@ export default class Veslo extends EventEmitter {
       if (matched && req.method === method && req.resolved !== true) {
         req.resolved = true;
         req.params = matched.params;
-        runMiddlewaresTask(req, res, app, stack);
+        runMiddlewaresTask(stack, { req, res, app });
       }
 
       return next();
@@ -73,29 +73,10 @@ export default class Veslo extends EventEmitter {
     }
 
     const { routes, stack } = this;
-    runMiddlewaresTask(req, res, this, [...stack, ...routes]);
-
-    setTimeout(() => {
-      if (Exception.length) {
-        const { message: errorMessage } = Exception[0];
-        Exception.length = 0;
-        res
-          .writeHead(500, {
-            'Content-Type': 'text/html',
-          })
-          .end(`500\nServer Error\n${errorMessage}`);
-      }
-    }, 0);
-
-    setTimeout(() => {
-      if (req.resolved !== true) {
-        res
-          .writeHead(404, {
-            'Content-Type': 'text/html',
-          })
-          .end(`404\n${req.url as string} ${req.method as string} Cannot Found`);
-      }
-    }, 0);
+    const done = () => {
+      handleNotFoundError(req, res);
+    };
+    runMiddlewaresTask([...stack, ...routes], { req, res, app: this, done });
   }
 
   listen(...args: unknown[]) {
@@ -113,8 +94,45 @@ export default class Veslo extends EventEmitter {
   }
 }
 
-function runMiddlewaresTask(req: Request, res: Response, app: Veslo, middlewares: Middleware[]) {
+function handleExecuteError(res: Response, Exception: Error) {
+  setImmediate(() => {
+    const { message: errorMessage } = Exception;
+    res
+      .writeHead(500, {
+        'Content-Type': 'text/html',
+      })
+      .end(`500\nServer Error\n${errorMessage}`);
+  });
+}
+
+function handleNotFoundError(req: Request, res: Response) {
+  setImmediate(() => {
+    if (req.resolved !== true && Exception.length === 0) {
+      res
+        .writeHead(404, {
+          'Content-Type': 'text/html',
+        })
+        .end(`404\n${req.url as string} ${req.method as string} Cannot Found`);
+    }
+  });
+}
+
+function runMiddlewaresTask(
+  middlewares: Middleware[],
+  options: {
+    req: Request;
+    res: Response;
+    app: Veslo;
+    done?: () => void;
+  }
+) {
+  const { req, res, app, done } = options;
+
   if (middlewares.length === 0) {
+    if (typeof done === 'function') {
+      done();
+    }
+
     return;
   }
 
@@ -123,6 +141,9 @@ function runMiddlewaresTask(req: Request, res: Response, app: Veslo, middlewares
       current += 1;
 
       if (current >= middlewares.length || Exception.length) {
+        if (typeof done === 'function') {
+          done();
+        }
         return;
       }
 
@@ -136,10 +157,7 @@ function runMiddlewaresTask(req: Request, res: Response, app: Veslo, middlewares
         const middle = middlewares[current];
         middle({ req, res, app }, next);
       } catch (err) {
-        if (err instanceof Error) {
-          Exception.push(err);
-        }
-
+        handleExecuteError(res, err as Error);
         console.error(err);
       }
     });
