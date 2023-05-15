@@ -63,13 +63,7 @@ export default class Veslo extends EventEmitter {
 
   run(req: Request, res: Response) {
     if (req.url === '/') {
-      res
-        .writeHead(200, {
-          'Content-Type': 'text/plain',
-          'Content-Length': WELCOME.length,
-        })
-        .end(WELCOME);
-      return;
+      handleRoorPath(res);
     }
 
     const { routes, stack } = this;
@@ -92,6 +86,15 @@ export default class Veslo extends EventEmitter {
 
     server.listen(args);
   }
+}
+
+function handleRoorPath(res: Response) {
+  res
+    .writeHead(200, {
+      'Content-Type': 'text/plain',
+      'Content-Length': WELCOME.length,
+    })
+    .end(WELCOME);
 }
 
 function handleExecuteError(res: Response, Exception: Error) {
