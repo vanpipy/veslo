@@ -3,6 +3,7 @@ The veslo is real, real, real slow.
 
 # Features
 * [x] Routable
+* [  ] Pluginable
 * [  ] Streamable
 * [  ] HTTPS
 * [  ] JSON Serialization
