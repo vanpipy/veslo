@@ -25,7 +25,7 @@ type Route = {
 const WELCOME = 'Hi, I am veslo';
 
 export default class Veslo extends EventEmitter {
-  private settings: Record<string, unknown> = {};
+  private settings: AnyObject<unknown> = {};
   private routes: Middleware[] = [];
   private stack: Middleware[] = [];
 
