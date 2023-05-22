@@ -1,9 +1,9 @@
-import Veslo from './Veslo';
+import Veslo, { Middleware } from './Veslo';
 
 function bootstrap() {
   const app = new Veslo();
   return app;
 }
 
-export { Veslo };
+export { Veslo, Middleware };
 export default bootstrap;

@@ -14,8 +14,6 @@ export type Context = {
   app: Veslo;
 };
 
-type Unknown = unknown | Promise<unknown>;
-
 export type Middleware = (context: Context, next: () => Unknown) => Unknown;
 
 type Route = {
