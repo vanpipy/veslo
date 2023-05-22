@@ -99,8 +99,9 @@ export default class Veslo extends EventEmitter {
         void this.run(req, res);
       }
     );
+    const [port, handle] = args;
 
-    server.listen(args);
+    server.listen(port as number, handle as () => void);
   }
 }
 
