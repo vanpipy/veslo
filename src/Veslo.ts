@@ -76,13 +76,13 @@ export default class Veslo extends EventEmitter {
   }
 
   run(req: Request, res: Response) {
-    if (req.url === '/') {
-      handleRoorPath(res);
-    }
-
     const { routes, stack } = this;
     const done = () => {
       handleNotFoundError(req, res);
+
+      if (req.url === '/') {
+        handleRoorPath(res);
+      }
     };
     runMiddlewaresTask([...stack, ...routes], { req, res, app: this, done });
   }
