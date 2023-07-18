@@ -329,4 +329,38 @@ describe('Veslo', () => {
     expect(response.headers['content-type']).to.eq('text/html');
     expect(response.text).to.eq('500\nServer Error\n500 error');
   });
+
+  it('should invoke all of the middlewares in the route stack', async () => {
+    let j = 0;
+
+    app.route({
+      path: '/run-all-middleware-in-the-route',
+      method: 'GET',
+      stack: [
+        (_, next) => {
+          j += 1;
+          return next();
+        },
+        (_, next) => {
+          j += 2;
+          return next();
+        },
+        ({ res }) => {
+          j += 3;
+          res.end(String(j));
+        },
+      ],
+    });
+
+    app.use((_, next) => {
+      j += 10;
+      return next();
+    });
+
+    const server = app.run.bind(app);
+    const response = await request(server).get('/run-all-middleware-in-the-route');
+    expect(j).to.eq(16);
+    expect(response.statusCode).to.eq(200);
+    expect(response.text).to.eq('16');
+  });
 });

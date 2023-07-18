@@ -23,6 +23,7 @@ type Route = {
 };
 
 const WELCOME = 'Hi, I am veslo';
+const noop = () => 0;
 
 export default class Veslo extends EventEmitter {
   private settings: AnyObject<unknown> = {};
@@ -63,10 +64,10 @@ export default class Veslo extends EventEmitter {
       if (matched && req.method === method && req.resolved !== true) {
         req.resolved = true;
         req.params = matched.params;
-        runMiddlewaresTask(stack, { req, res, app });
+        runMiddlewaresTask(stack, { req, res, app, done: next });
+      } else {
+        next();
       }
-
-      return next();
     };
     this.routes.push(routeTask);
   }
@@ -145,19 +146,15 @@ function runMiddlewaresTask(
   }
 ) {
   const middlewaresLength = middlewares.length;
-  const { req, res, app, done } = options;
+  const { req, res, app, done = noop } = options;
   const { logger } = app;
 
   logger.debug(`> [Start] to run middlewares task(${middlewaresLength})`);
 
   if (middlewares.length === 0) {
     logger.debug(`> [Stop] cause middlewares task(${middlewaresLength}) are empty`);
-
-    if (typeof done === 'function') {
-      logger.debug('> [Done] cause middlewares task was empty');
-      done();
-    }
-
+    logger.debug('> [Done] cause middlewares task was empty');
+    done();
     logger.debug('> [End] middlewares task');
 
     return;
@@ -170,11 +167,8 @@ function runMiddlewaresTask(
       if (current + 1 >= middlewaresLength) {
         logger.debug(`|-> [End] at ${current + 1}/${middlewaresLength} with the task[${current}]`);
         logger.debug('> [End] the running middlewares task');
-
-        if (typeof done === 'function') {
-          logger.debug('> [Done] cause the middlewares task was ended');
-          done();
-        }
+        logger.debug('> [Done] cause the middlewares task was ended');
+        done();
 
         return;
       }
@@ -201,6 +195,7 @@ function runMiddlewaresTask(
         logger.debug(`|-> [Error] with immediate task ${current + 1}/${middlewaresLength}`);
         logger.error(err);
         handleExecuteError(res, err as Error);
+        done();
       }
     };
 
