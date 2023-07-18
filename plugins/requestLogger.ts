@@ -1,17 +1,26 @@
 import { Middleware } from '../src/index';
 
+const formatDate = (date: Date) => {
+  return (
+    `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()} ` +
+    `${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`
+  );
+};
+
 const requestLogger: Middleware = (context, next) => {
   const { req, res } = context;
-  const timestamp = new Date().getTime();
-
-  console.log(`[==>] Incoming message from the path ${req.url as string} - ${timestamp}`);
-
+  const incoming = new Date();
+  const incomingTimestamp = incoming.getTime();
+  const incomingDate = formatDate(incoming);
+  console.log('[<=] [%s] [%s] Incoming message', incomingDate, req.url);
   res.on('finish', () => {
-    const finishedTimestamp = new Date().getTime();
-    console.log(`[===] Cost - ${finishedTimestamp - timestamp}ms`);
+    const outgoing = new Date();
+    const outgoingTimestamp = outgoing.getTime();
+    const outgoingDate = formatDate(outgoing);
+    console.log('[=>] [%s] [%s] Time cost: %dms', outgoingDate, req.url, outgoingTimestamp - incomingTimestamp);
   });
 
-  next();
+  return next();
 };
 
 export default requestLogger;
