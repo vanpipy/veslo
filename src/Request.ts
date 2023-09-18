@@ -6,6 +6,8 @@ class Request extends IncomingMessage {
 
   public params!: Record<string, unknown> | object;
 
+  public body!: AnyObject | string;
+
   public header(key: string) {
     return this.headers[key];
   }
