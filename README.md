@@ -4,10 +4,10 @@ The veslo is real, real, real slow.
 # Features
 * [x] Routable
 * [x] Pluginable
-* [  ] Streamable
-* [  ] HTTPS
+* [x] Streamable
 * [  ] JSON Serialization
 * [  ] Event Bus
+* [  ] HTTPS
 
 ## References
 * [Node 16 API Doc](https://nodejs.org/dist/latest-v16.x/docs/api/)
