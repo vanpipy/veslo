@@ -16,16 +16,18 @@ describe('requestLogger', () => {
       },
     ],
   });
-  const spied = Sinon.spy(global.console, 'log');
+  let spied: Sinon.SinonSpy;
   let clock: Sinon.SinonFakeTimers;
 
   beforeEach(() => {
+    spied = Sinon.spy(global.console, 'log');
     clock = Sinon.useFakeTimers({
       toFake: ['Date'],
     });
   });
 
   afterEach(() => {
+    spied.restore();
     clock.restore();
   });
 
