@@ -1,5 +1,4 @@
 import { EventEmitter } from 'node:events';
-import { createServer } from 'node:http';
 import { unescape } from 'node:querystring';
 import { match } from 'path-to-regexp';
 import pino from 'pino';
@@ -30,7 +29,8 @@ export default class Veslo extends EventEmitter {
   private routes: Middleware[] = [];
   private stack: Middleware[] = [];
 
-  public logger: pino.Logger;
+  logger: pino.Logger;
+  listen!: (port: number, handler: () => void) => void;
 
   constructor(config?: { logger?: pino.LoggerOptions & { logPath?: string } }) {
     super();
@@ -86,21 +86,6 @@ export default class Veslo extends EventEmitter {
       }
     };
     runMiddlewaresTask([...stack, ...routes], { req, res, app: this, done });
-  }
-
-  listen(...args: unknown[]) {
-    const server = createServer(
-      {
-        IncomingMessage: Request,
-        ServerResponse: Response,
-      },
-      (req, res) => {
-        void this.run(req, res);
-      }
-    );
-    const [port, handle] = args;
-
-    server.listen(port as number, handle as () => void);
   }
 }
 
