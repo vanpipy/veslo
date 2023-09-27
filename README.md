@@ -6,7 +6,6 @@ The veslo is real, real, real slow.
 * [x] Pluginable
 * [x] Streamable
 * [x] JSON Serialization
-* [  ] Event Bus
 * [  ] HTTPS
 
 ## References
