@@ -6,7 +6,7 @@ The veslo is real, real, real slow.
 * [x] Pluginable
 * [x] Streamable
 * [x] JSON Serialization
-* [  ] HTTPS
+* [x] HTTPS
 
 ## References
 * [Node 16 API Doc](https://nodejs.org/dist/latest-v16.x/docs/api/)
